@@ -7,9 +7,8 @@ namespace DSSeptiembre.Shared.Domain;
 public class Zona : BaseModel
 {
     [PrimaryKey("id")]
-    public int Id { get; set; }
-    
+    public long Id { get; set; }
+
     [Column("nombrezona")]
     public string NombreZona { get; set; } = string.Empty;
-
 }

@@ -1,0 +1,18 @@
+@inject IJSRuntime Js
+
+<button type="button" class="@CssClass" @onclick="Imprimir">
+    @Texto
+</button>
+
+@code {
+    [Parameter] public string Texto { get; set; } = "Imprimir";
+
+    [Parameter]
+    public string CssClass { get; set; } =
+        "print:hidden inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700";
+
+    private async Task Imprimir()
+    {
+        await Js.InvokeVoidAsync("print");
+    }
+}

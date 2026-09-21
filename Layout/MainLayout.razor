@@ -1,3 +1,24 @@
 ﻿@inherits LayoutComponentBase
 
-@Body
+<div class="min-h-screen bg-slate-100 text-slate-800">
+    <header class="print:hidden bg-slate-900 text-white shadow">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+            <a href="" class="text-lg font-semibold tracking-tight">DSSeptiembre</a>
+            <nav class="flex flex-wrap gap-1 text-sm">
+                <NavLink href="rubros" class="rounded px-3 py-1.5 hover:bg-slate-700">
+                    Rubros
+                </NavLink>
+                <NavLink href="clientes-naturales" class="rounded px-3 py-1.5 hover:bg-slate-700">
+                    Clientes Naturales
+                </NavLink>
+                <NavLink href="panel-clientes" class="rounded px-3 py-1.5 hover:bg-slate-700">
+                    Panel de Clientes
+                </NavLink>
+            </nav>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
+        @Body
+    </main>
+</div>

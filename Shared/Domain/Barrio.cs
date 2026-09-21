@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
@@ -7,18 +8,20 @@ namespace DSSeptiembre.Shared.Domain;
 public class Barrio : BaseModel
 {
     [PrimaryKey("id")]
-    public int Id { get; set; }
-    
+    public long Id { get; set; }
+
     [Column("nombrebarrio")]
     public string NombreBarrio { get; set; } = string.Empty;
-    
+
     [Column("fechafundacion")]
-    public DateTime FechaFundacion { get; set; }
-    
+    public DateTime? FechaFundacion { get; set; }
+
     [Column("descripcion")]
-    public string Descripcion { get; set; } = string.Empty;
-    
-    // Solo guardamos el ID de la Zona, no el objeto entero
+    public string? Descripcion { get; set; }
+
     [Column("zona_id")]
-    public int ZonaId { get; set; } 
+    public long? ZonaId { get; set; }
+
+    // Propiedad de navegación (no se persiste)
+    [JsonIgnore] public Zona? Zona { get; set; }
 }

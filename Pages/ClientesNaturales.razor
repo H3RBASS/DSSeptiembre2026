@@ -1,0 +1,377 @@
+@page "/clientes-naturales"
+@inject IClienteNaturalService ClienteNaturalService
+@inject ICatalogoService CatalogoService
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+<PageTitle>Gestionar Cliente Natural</PageTitle>
+
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-2xl font-bold">Gestionar Cliente Natural</h1>
+        <p class="text-sm text-slate-500">R002 · Gestionar cliente natural</p>
+    </div>
+    <a href="clientes-naturales/imprimir"
+       class="print:hidden rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-100">
+        Imprimir listado (R005)
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="mb-4 rounded-md border px-4 py-3 text-sm @(esError ? "border-red-300 bg-red-50 text-red-700" : "border-green-300 bg-green-50 text-green-700")">
+        @mensaje
+    </div>
+}
+
+<div class="grid gap-6 xl:grid-cols-[380px_1fr]">
+    <section class="print:hidden h-fit rounded-lg bg-white p-5 shadow">
+        <h2 class="mb-4 font-semibold">@(editandoId is null ? "Nuevo cliente natural" : "Editar cliente natural")</h2>
+
+        <EditForm Model="naturalModelo" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+
+            <h3 class="mb-2 mt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Datos personales</h3>
+            <div class="mb-3">
+                <label class="mb-1 block text-sm font-medium">Nombre *</label>
+                <InputText @bind-Value="naturalModelo.Nombre" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                <ValidationMessage For="() => naturalModelo.Nombre" />
+            </div>
+            <div class="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Apellido paterno</label>
+                    <InputText @bind-Value="naturalModelo.ApellidoPaterno" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Apellido materno</label>
+                    <InputText @bind-Value="naturalModelo.ApellidoMaterno" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                </div>
+            </div>
+            <div class="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Documento de identidad</label>
+                    <InputText @bind-Value="naturalModelo.DocumentoIdentidad" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Género</label>
+                    <InputSelect @bind-Value="naturalModelo.Genero" class="w-full rounded border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">-- Sin especificar --</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                        <option value="Otro">Otro</option>
+                    </InputSelect>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="mb-1 block text-sm font-medium">Fecha de nacimiento</label>
+                <InputDate @bind-Value="naturalModelo.FechaNacimiento" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+            </div>
+
+            <h3 class="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Datos de cliente</h3>
+            <div class="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Teléfono</label>
+                    <InputText @bind-Value="clienteModelo.Telefono" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">NIT</label>
+                    <InputText @bind-Value="clienteModelo.Nit" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="mb-1 block text-sm font-medium">Dirección</label>
+                <InputText @bind-Value="clienteModelo.Direccion" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+            </div>
+            <div class="mb-3">
+                <label class="mb-1 block text-sm font-medium">Rubro</label>
+                <InputSelect @bind-Value="clienteModelo.RubroId" class="w-full rounded border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">-- Sin rubro --</option>
+                    @foreach (var rubro in rubros)
+                    {
+                        <option value="@rubro.Id">@rubro.NombreRubro</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-4">
+                <label class="mb-1 block text-sm font-medium">Barrio / Zona</label>
+                <InputSelect @bind-Value="clienteModelo.BarrioId" class="w-full rounded border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">-- Sin barrio --</option>
+                    @foreach (var barrio in barrios)
+                    {
+                        <option value="@barrio.Id">@DescripcionBarrio(barrio)</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+                    @(editandoId is null ? "Registrar" : "Actualizar")
+                </button>
+                @if (editandoId is not null)
+                {
+                    <button type="button" class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" @onclick="Cancelar">
+                        Cancelar
+                    </button>
+                }
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="rounded-lg bg-white p-5 shadow">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="font-semibold">Clientes naturales (@filtrados.Count)</h2>
+            <input @bind="busqueda" @bind:event="oninput" placeholder="Buscar por nombre, documento, NIT, rubro o barrio..."
+                   class="print:hidden w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+
+        @if (cargando)
+        {
+            <p class="text-sm text-slate-500">Cargando...</p>
+        }
+        else if (filtrados.Count == 0)
+        {
+            <p class="text-sm text-slate-500">No se encontraron clientes naturales.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500">
+                            <th class="py-2">Nombre</th>
+                            <th class="py-2">Documento</th>
+                            <th class="py-2">NIT</th>
+                            <th class="py-2">Rubro</th>
+                            <th class="py-2">Barrio / Zona</th>
+                            <th class="py-2 print:hidden">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filtrados)
+                        {
+                            <tr class="border-b border-slate-100 align-top">
+                                <td class="py-2">
+                                    <div class="font-medium">@item.NombreCompleto</div>
+                                    <div class="text-xs text-slate-400">@item.Genero</div>
+                                </td>
+                                <td class="py-2">@item.DocumentoIdentidad</td>
+                                <td class="py-2">@item.Cliente?.Nit</td>
+                                <td class="py-2">@item.Cliente?.Rubro?.NombreRubro</td>
+                                <td class="py-2">
+                                    @item.Cliente?.Barrio?.NombreBarrio
+                                    @if (item.Cliente?.Barrio?.Zona is not null)
+                                    {
+                                        <span class="text-xs text-slate-400">(@item.Cliente.Barrio.Zona.NombreZona)</span>
+                                    }
+                                </td>
+                                <td class="py-2 print:hidden">
+                                    <div class="flex flex-wrap gap-2">
+                                        <a href="@KardexUrl(item.Id)" class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-100">
+                                            Kardex
+                                        </a>
+                                        <button class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-100" @onclick="() => Editar(item)">
+                                            Editar
+                                        </button>
+                                        <button class="rounded border border-red-300 px-2 py-1 text-red-600 hover:bg-red-50" @onclick="() => Eliminar(item)">
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private List<Natural> clientes = new();
+    private List<Rubro> rubros = new();
+    private List<Barrio> barrios = new();
+    private List<Zona> zonas = new();
+
+    private Cliente clienteModelo = new();
+    private Natural naturalModelo = new();
+    private long? editandoId;
+    private string busqueda = string.Empty;
+    private bool cargando = true;
+    private string? mensaje;
+    private bool esError;
+
+    private List<Natural> filtrados
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(busqueda))
+            {
+                return clientes;
+            }
+
+            var termino = busqueda.Trim().ToLowerInvariant();
+            return clientes.Where(c =>
+                Contiene(c.NombreCompleto, termino) ||
+                Contiene(c.DocumentoIdentidad, termino) ||
+                Contiene(c.Cliente?.Nit, termino) ||
+                Contiene(c.Cliente?.Rubro?.NombreRubro, termino) ||
+                Contiene(c.Cliente?.Barrio?.NombreBarrio, termino) ||
+                Contiene(c.Cliente?.Barrio?.Zona?.NombreZona, termino)
+            ).ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCatalogosAsync();
+        await CargarAsync();
+    }
+
+    private async Task CargarCatalogosAsync()
+    {
+        try
+        {
+            rubros = await CatalogoService.GetRubrosAsync();
+            zonas = await CatalogoService.GetZonasAsync();
+            barrios = await CatalogoService.GetBarriosAsync();
+
+            var zonasPorId = zonas.ToDictionary(z => z.Id);
+            foreach (var barrio in barrios)
+            {
+                if (barrio.ZonaId is long zonaId && zonasPorId.TryGetValue(zonaId, out var zona))
+                {
+                    barrio.Zona = zona;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudieron cargar los catálogos: {ex.Message}");
+        }
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        try
+        {
+            clientes = await ClienteNaturalService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudieron cargar los clientes: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (editandoId is null)
+            {
+                await ClienteNaturalService.CreateAsync(clienteModelo, naturalModelo);
+                MostrarExito("Cliente natural registrado correctamente.");
+            }
+            else
+            {
+                clienteModelo.Id = editandoId.Value;
+                naturalModelo.Id = editandoId.Value;
+                await ClienteNaturalService.UpdateAsync(clienteModelo, naturalModelo);
+                MostrarExito("Cliente natural actualizado correctamente.");
+            }
+
+            Cancelar();
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudo guardar el cliente natural: {ex.Message}");
+        }
+    }
+
+    private void Editar(Natural item)
+    {
+        editandoId = item.Id;
+        naturalModelo = new Natural
+        {
+            Id = item.Id,
+            Nombre = item.Nombre,
+            ApellidoPaterno = item.ApellidoPaterno,
+            ApellidoMaterno = item.ApellidoMaterno,
+            Genero = item.Genero,
+            DocumentoIdentidad = item.DocumentoIdentidad,
+            FechaNacimiento = item.FechaNacimiento
+        };
+        clienteModelo = new Cliente
+        {
+            Id = item.Id,
+            Direccion = item.Cliente?.Direccion,
+            Telefono = item.Cliente?.Telefono,
+            Nit = item.Cliente?.Nit,
+            RubroId = item.Cliente?.RubroId,
+            BarrioId = item.Cliente?.BarrioId
+        };
+        mensaje = null;
+    }
+
+    private async Task Eliminar(Natural item)
+    {
+        var confirmado = await Js.InvokeAsync<bool>("confirm", $"¿Eliminar a \"{item.NombreCompleto}\"? Se eliminarán sus datos de cliente.");
+        if (!confirmado)
+        {
+            return;
+        }
+
+        try
+        {
+            await ClienteNaturalService.DeleteAsync(item.Id);
+            MostrarExito("Cliente natural eliminado correctamente.");
+            if (editandoId == item.Id)
+            {
+                Cancelar();
+            }
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudo eliminar el cliente natural: {ex.Message}");
+        }
+    }
+
+    private void Cancelar()
+    {
+        editandoId = null;
+        clienteModelo = new Cliente();
+        naturalModelo = new Natural();
+    }
+
+    private string DescripcionBarrio(Barrio barrio)
+    {
+        return barrio.Zona is null
+            ? barrio.NombreBarrio
+            : $"{barrio.NombreBarrio} ({barrio.Zona.NombreZona})";
+    }
+
+    private static bool Contiene(string? valor, string termino)
+    {
+        return !string.IsNullOrEmpty(valor) && valor.ToLowerInvariant().Contains(termino);
+    }
+
+    private static string KardexUrl(long id) => $"kardex/{id}";
+
+    private void MostrarExito(string texto)
+    {
+        mensaje = texto;
+        esError = false;
+    }
+
+    private void MostrarError(string texto)
+    {
+        mensaje = texto;
+        esError = true;
+    }
+}

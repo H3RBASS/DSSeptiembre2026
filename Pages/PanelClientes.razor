@@ -1,0 +1,266 @@
+@page "/panel-clientes"
+@inject IClienteNaturalService ClienteNaturalService
+
+<PageTitle>Panel de Clientes</PageTitle>
+
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-2xl font-bold">Panel de Clientes</h1>
+        <p class="text-sm text-slate-500">R003 · Imprimir panel de clientes</p>
+    </div>
+    <PrintButton Texto="Imprimir panel"/>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+        @mensaje
+    </div>
+}
+
+@if (cargando)
+{
+    <p class="text-sm text-slate-500">Cargando panel...</p>
+}
+else
+{
+    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-lg bg-white p-5 shadow">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Total clientes</p>
+            <p class="mt-1 text-3xl font-bold">@TotalClientes</p>
+        </div>
+        <div class="rounded-lg bg-white p-5 shadow">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Clientes naturales</p>
+            <p class="mt-1 text-3xl font-bold text-emerald-600">@clientes.Count</p>
+        </div>
+        <div class="rounded-lg bg-white p-5 shadow">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Clientes jurídicos</p>
+            <p class="mt-1 text-3xl font-bold text-sky-600">@totalJuridicos</p>
+        </div>
+        <div class="rounded-lg bg-white p-5 shadow">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Rubros registrados</p>
+            <p class="mt-1 text-3xl font-bold text-amber-600">@totalRubros</p>
+        </div>
+    </div>
+
+    <div class="mb-6 grid gap-6 lg:grid-cols-2">
+        <section class="rounded-lg bg-white p-5 shadow">
+            <h2 class="mb-3 font-semibold">Clientes naturales por rubro</h2>
+            @if (porRubro.Count == 0)
+            {
+                <p class="text-sm text-slate-500">Sin datos.</p>
+            }
+            else
+            {
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500">
+                            <th class="py-2">Rubro</th>
+                            <th class="py-2 text-right">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var grupo in porRubro)
+                        {
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2">@grupo.Key</td>
+                                <td class="py-2 text-right font-medium">@grupo.Count()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="rounded-lg bg-white p-5 shadow">
+            <h2 class="mb-3 font-semibold">Clientes naturales por barrio / zona</h2>
+            @if (porBarrio.Count == 0)
+            {
+                <p class="text-sm text-slate-500">Sin datos.</p>
+            }
+            else
+            {
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500">
+                            <th class="py-2">Barrio</th>
+                            <th class="py-2">Zona</th>
+                            <th class="py-2 text-right">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var grupo in porBarrio)
+                        {
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2">@grupo.Key.NombreBarrio</td>
+                                <td class="py-2 text-slate-500">@grupo.Key.Zona?.NombreZona</td>
+                                <td class="py-2 text-right font-medium">@grupo.Count()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    </div>
+
+    <section class="rounded-lg bg-white p-5 shadow">
+        <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <h2 class="font-semibold">Listado de clientes naturales (@filtrados.Count)</h2>
+            <div class="print:hidden flex flex-wrap gap-2">
+                <input @bind="busqueda" @bind:event="oninput" placeholder="Buscar..."
+                       class="rounded border border-slate-300 px-3 py-2 text-sm" />
+                <select @bind="filtroRubro" class="rounded border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Todos los rubros</option>
+                    @foreach (var rubro in rubrosDisponibles)
+                    {
+                        <option value="@rubro">@rubro</option>
+                    }
+                </select>
+                <select @bind="filtroBarrio" class="rounded border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Todos los barrios</option>
+                    @foreach (var barrio in barriosDisponibles)
+                    {
+                        <option value="@barrio">@barrio</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (filtrados.Count == 0)
+        {
+            <p class="text-sm text-slate-500">No hay clientes que coincidan con los filtros.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500">
+                            <th class="py-2">Nombre</th>
+                            <th class="py-2">Documento</th>
+                            <th class="py-2">Rubro</th>
+                            <th class="py-2">Barrio / Zona</th>
+                            <th class="py-2">Teléfono</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filtrados)
+                        {
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 font-medium">@item.NombreCompleto</td>
+                                <td class="py-2">@item.DocumentoIdentidad</td>
+                                <td class="py-2">@item.Cliente?.Rubro?.NombreRubro</td>
+                                <td class="py-2">
+                                    @item.Cliente?.Barrio?.NombreBarrio
+                                    @if (item.Cliente?.Barrio?.Zona is not null)
+                                    {
+                                        <span class="text-xs text-slate-400">(@item.Cliente.Barrio.Zona.NombreZona)</span>
+                                    }
+                                </td>
+                                <td class="py-2">@item.Cliente?.Telefono</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private List<Natural> clientes = new();
+    private int totalJuridicos;
+    private bool cargando = true;
+    private string? mensaje;
+
+    private string busqueda = string.Empty;
+    private string filtroRubro = string.Empty;
+    private string filtroBarrio = string.Empty;
+
+    private int TotalClientes => clientes.Count + totalJuridicos;
+    private int totalRubros => clientes
+        .Select(c => c.Cliente?.Rubro?.NombreRubro)
+        .Where(r => !string.IsNullOrWhiteSpace(r))
+        .Distinct()
+        .Count();
+
+    private List<IGrouping<string, Natural>> porRubro => clientes
+        .GroupBy(c => c.Cliente?.Rubro?.NombreRubro ?? "Sin rubro")
+        .OrderByDescending(g => g.Count())
+        .ToList();
+
+    private static readonly Barrio SinBarrio = new() { NombreBarrio = "Sin barrio" };
+
+    private List<IGrouping<Barrio, Natural>> porBarrio => clientes
+        .GroupBy(c => c.Cliente?.Barrio ?? SinBarrio)
+        .OrderByDescending(g => g.Count())
+        .ToList();
+
+    private List<string> rubrosDisponibles => clientes
+        .Select(c => c.Cliente?.Rubro?.NombreRubro)
+        .Where(r => !string.IsNullOrWhiteSpace(r))
+        .Select(r => r!)
+        .Distinct()
+        .OrderBy(r => r)
+        .ToList();
+
+    private List<string> barriosDisponibles => clientes
+        .Select(c => c.Cliente?.Barrio?.NombreBarrio)
+        .Where(b => !string.IsNullOrWhiteSpace(b))
+        .Select(b => b!)
+        .Distinct()
+        .OrderBy(b => b)
+        .ToList();
+
+    private List<Natural> filtrados
+    {
+        get
+        {
+            IEnumerable<Natural> query = clientes;
+
+            if (!string.IsNullOrWhiteSpace(filtroRubro))
+            {
+                query = query.Where(c => c.Cliente?.Rubro?.NombreRubro == filtroRubro);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filtroBarrio))
+            {
+                query = query.Where(c => c.Cliente?.Barrio?.NombreBarrio == filtroBarrio);
+            }
+
+            if (!string.IsNullOrWhiteSpace(busqueda))
+            {
+                var termino = busqueda.Trim().ToLowerInvariant();
+                query = query.Where(c =>
+                    Contiene(c.NombreCompleto, termino) ||
+                    Contiene(c.DocumentoIdentidad, termino) ||
+                    Contiene(c.Cliente?.Nit, termino) ||
+                    Contiene(c.Cliente?.Telefono, termino));
+            }
+
+            return query.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clientes = await ClienteNaturalService.GetAllAsync();
+            totalJuridicos = await ClienteNaturalService.CountJuridicosAsync();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"No se pudo cargar el panel: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private static bool Contiene(string? valor, string termino)
+    {
+        return !string.IsNullOrEmpty(valor) && valor.ToLowerInvariant().Contains(termino);
+    }
+}

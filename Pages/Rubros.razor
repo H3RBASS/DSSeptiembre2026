@@ -1,0 +1,190 @@
+@page "/rubros"
+@inject IRubroService RubroService
+@inject IJSRuntime Js
+
+<PageTitle>Registrar Rubro</PageTitle>
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold">Registrar Rubro</h1>
+    <p class="text-sm text-slate-500">R001 · Registrar rubro</p>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="mb-4 rounded-md border px-4 py-3 text-sm @(esError ? "border-red-300 bg-red-50 text-red-700" : "border-green-300 bg-green-50 text-green-700")">
+        @mensaje
+    </div>
+}
+
+<div class="grid gap-6 md:grid-cols-[340px_1fr]">
+    <section class="print:hidden h-fit rounded-lg bg-white p-5 shadow">
+        <h2 class="mb-4 font-semibold">@(editando is null ? "Nuevo rubro" : "Editar rubro")</h2>
+        <EditForm Model="modelo" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <div class="mb-4">
+                <label class="mb-1 block text-sm font-medium">Nombre del rubro</label>
+                <InputText @bind-Value="modelo.NombreRubro" class="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                <ValidationMessage For="() => modelo.NombreRubro" />
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+                    @(editando is null ? "Registrar" : "Actualizar")
+                </button>
+                @if (editando is not null)
+                {
+                    <button type="button" class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" @onclick="Cancelar">
+                        Cancelar
+                    </button>
+                }
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="rounded-lg bg-white p-5 shadow">
+        <h2 class="mb-4 font-semibold">Rubros registrados</h2>
+        @if (cargando)
+        {
+            <p class="text-sm text-slate-500">Cargando...</p>
+        }
+        else if (rubros.Count == 0)
+        {
+            <p class="text-sm text-slate-500">No hay rubros registrados.</p>
+        }
+        else
+        {
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500">
+                        <th class="py-2">#</th>
+                        <th class="py-2">Nombre</th>
+                        <th class="py-2 print:hidden">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rubro in rubros)
+                    {
+                        <tr class="border-b border-slate-100">
+                            <td class="py-2">@rubro.Id</td>
+                            <td class="py-2">@rubro.NombreRubro</td>
+                            <td class="py-2 print:hidden">
+                                <div class="flex gap-2">
+                                    <button class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-100" @onclick="() => Editar(rubro)">
+                                        Editar
+                                    </button>
+                                    <button class="rounded border border-red-300 px-2 py-1 text-red-600 hover:bg-red-50" @onclick="() => Eliminar(rubro)">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+</div>
+
+@code {
+    private List<Rubro> rubros = new();
+    private Rubro modelo = new();
+    private Rubro? editando;
+    private bool cargando = true;
+    private string? mensaje;
+    private bool esError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        try
+        {
+            rubros = await RubroService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudieron cargar los rubros: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (editando is null)
+            {
+                await RubroService.CreateAsync(modelo);
+                MostrarExito("Rubro registrado correctamente.");
+            }
+            else
+            {
+                modelo.Id = editando.Id;
+                await RubroService.UpdateAsync(modelo);
+                MostrarExito("Rubro actualizado correctamente.");
+            }
+
+            Cancelar();
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudo guardar el rubro: {ex.Message}");
+        }
+    }
+
+    private void Editar(Rubro rubro)
+    {
+        editando = rubro;
+        modelo = new Rubro { Id = rubro.Id, NombreRubro = rubro.NombreRubro };
+        mensaje = null;
+    }
+
+    private async Task Eliminar(Rubro rubro)
+    {
+        var confirmado = await Js.InvokeAsync<bool>("confirm", $"¿Eliminar el rubro \"{rubro.NombreRubro}\"?");
+        if (!confirmado)
+        {
+            return;
+        }
+
+        try
+        {
+            await RubroService.DeleteAsync(rubro.Id);
+            MostrarExito("Rubro eliminado correctamente.");
+            if (editando?.Id == rubro.Id)
+            {
+                Cancelar();
+            }
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            MostrarError($"No se pudo eliminar el rubro: {ex.Message}");
+        }
+    }
+
+    private void Cancelar()
+    {
+        editando = null;
+        modelo = new Rubro();
+    }
+
+    private void MostrarExito(string texto)
+    {
+        mensaje = texto;
+        esError = false;
+    }
+
+    private void MostrarError(string texto)
+    {
+        mensaje = texto;
+        esError = true;
+    }
+}
