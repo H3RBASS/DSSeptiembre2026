@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # 👇 Fija la versión para evitar el cambio automático a Ubuntu 26.04
+    runs-on: ubuntu-24.04
 
     environment:
       name: github-pages
