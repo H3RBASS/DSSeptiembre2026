@@ -1,0 +1,68 @@
+name: Deploy Blazor WASM to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Instalar dependencias de npm
+        run: npm install
+
+      - name: Compilar Tailwind CSS
+        run: npm run build-css
+
+      - name: Restaurar paquetes
+        run: dotnet restore
+
+      - name: Publicar aplicación
+        run: dotnet publish -c Release -o publish
+
+      - name: Configurar base href para GitHub Pages
+        run: |
+          sed -i 's|<base href="/" />|<base href="/SgiMadsi/" />|' publish/wwwroot/index.html
+
+      - name: Crear fallback para rutas de Blazor
+        run: cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Subir archivos
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: publish/wwwroot
+
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
